@@ -3,7 +3,7 @@
 	"name": "WISP Friends",
 	"icons": [
 		{
-		"src": "wisp.png",
+		"src": "profoundlyIcon.svg",
 		"sizes": "192x192",
 		"type": "image/png"
 		}
