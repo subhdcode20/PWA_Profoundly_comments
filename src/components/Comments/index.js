@@ -10,10 +10,11 @@ import RefreshIndicator from 'material-ui/RefreshIndicator';
 import Timestamp from "react-timestamp";
 import TextField from "material-ui/TextField";
 import ActionSend from "material-ui/svg-icons/content/send";
+import Snackbar from 'material-ui/Snackbar';
 import { cyan500 } from "material-ui/styles/colors";
-import {addComment, getComments, saveComment, addComments} from "../../actions/comments";
+import {addComment, getComments, saveComment, addComments, addChildListener, getCacheData} from "../../actions/comments";
 import querystring from 'query-string';
-
+import NoFriends from '../NoFriends';
 import Styles from "./style.scss";
 import { htmlDecode, sortFriendList, formatDate, formatTime } from '../../utility';
 
@@ -34,6 +35,7 @@ class CommentsIndex extends Component {
     this.startListening = this.startListening.bind(this)
     this.handleChildAdd = this.handleChildAdd.bind(this)
     this.handleImg = this.handleImg.bind(this)
+    this.handleClose = this.handleClose.bind(this)
   }
 
   componentWillMount() {
@@ -50,26 +52,18 @@ class CommentsIndex extends Component {
         console.log("searchParams: ", JSON.stringify(storyId), JSON.stringify(authId));
         localStorage.setItem('PC_PWA_STORYID', JSON.stringify(storyId));
         localStorage.setItem('PC_PWA_AUTHID', JSON.stringify(authId))
-        // TODO: GET authId from url and set localStorage and use that in getComments api
-    } else {
-        try{
-            storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'));
-            authId = JSON.parse(localStorage.getItem('PC_PWA_AUTHID'));
-        }catch(e){}
+
     }
-    var cacheComments = localStorage.getItem(`PC_PWA_COMMENTS_${storyId}`) != null ? JSON.parse(localStorage.getItem(`PC_PWA_COMMENTS_${storyId}`)) : []
-    var story_me = localStorage.getItem('PC_PWA_STORY_ME') != null ? JSON.parse(localStorage.getItem('PC_PWA_STORY_ME')).story : {}
-    console.log('cache data in will mount= ', cacheComments, story_me);
-    // if(cacheComments == null || cacheComments == undefined) {
-    //   cacheComments = []
-    // } else {
-    //   cacheComments = JSON.parse(cacheComments)
+    // else {
+    //     try{
+    //         storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'));
+    //         authId = JSON.parse(localStorage.getItem('PC_PWA_AUTHID'));
+    //     }catch(e){}
     // }
-    console.log('state in will mount = ', this.state);
-    this.setState({storyId: storyId,story: story_me, comments: cacheComments}, () => {
-      console.log("will mount setState= ", this.state);
-    })
-    // TODO: set story from cache
+
+    // if(!navigator.onLine) {
+      this.props.getCacheData(storyId)
+    // }
   }
 
   componentDidMount() {
@@ -77,38 +71,76 @@ class CommentsIndex extends Component {
     const storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'))
     const authId = JSON.parse(localStorage.getItem('PC_PWA_AUTHID'))
     console.log("getComments params = ", storyId, authId);
-    this.props.getComments(storyId, authId)
+    console.log("navigator status= ", navigator.onLine);
+    if(navigator.onLine) {
+      console.log("navigator online -- get friendsss");
+      this.props.getComments(storyId, authId)
+    } else {
+      console.log("navigator offline no get friends api");
+    }
 
-    this.startListening(storyId)
+    // this.startListening(storyId)
   }
 
   componentWillReceiveProps(nextProps) {
     console.log("componentWillReceiveProps = ", nextProps);
-    let {comments, story} = nextProps
+    const storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'))
+
+    let {comments, story, showVulgar, childListeners} = nextProps
+    let newState = {}
     if(comments != null && comments != undefined) {
-      this.setState({comments})
+      // this.setState({comments})
+      newState["comments"] = comments
     }
     if(story != null && story != undefined) {
-      this.setState({story})
+      // this.setState({story})
+      newState["story"] = story
     }
+    if(showVulgar != null && showVulgar != undefined) {
+      newState["showVulgar"] = showVulgar
+    }
+
+    this.setState(newState)
+
+  	if (!childListeners.includes(storyId)) {
+
+      let lastComment;
+      if (comments && comments.length > 0) {
+        lastComment = comments[comments.length - 1];
+      }
+      console.log("call startListening -- ", lastComment);
+            // this.startListening(story.storyId, lastComment);
+    } else {
+
+    }
+
   }
 
-  startListening(storyId) {
-    console.log("in startListening ", storyId);
-    firebase
-      .database()
-      .ref(`/rooms/${storyId}`)
-      .on('child_added', snapshot => this.handleChildAdd(snapshot));
+  startListening(storyId, lastComment) {
+    console.log("in startListening ", storyId, lastComment);
+    	if (lastComment && lastComment.id) {
+        firebase
+          .database()
+          .ref(`/rooms/${storyId}`)
+          .on('child_added', snapshot => this.handleChildAdd(snapshot, lastComment));
+      } else {
+        firebase
+          .database()
+          .ref(`/rooms/${storyId}`)
+          .on('child_added', snapshot => this.handleChildAdd(snapshot));
+      }
+      this.props.addChildListener(storyId);
   }
 
-  handleChildAdd(snapshot, lastChat) {
+  handleChildAdd(snapshot, lastComment) {
     const msg = snapshot.val();
     console.log('handleChildAdd = ', snapshot, msg, this.state, this.props);
 		const msgId = snapshot.key;
-		console.log('msg in handleChildAdd= ', msg);
+		console.log('msg in handleChildAdd= ', msg, lastComment);
 		msg.id = msgId;
-    // (lastChat && lastChat.id && lastChat.id === msgId) ||
+    // (lastComment && lastComment.id && lastComment.id === msgId) ||
 		if (
+      (lastComment && lastComment.id && lastComment.id === msgId) ||
 			(msg.from.channelId === this.props.me.channelId &&
 			parseInt(msg.timeStamp, 10) > this.state.timeStamp)
 		) {
@@ -129,32 +161,39 @@ class CommentsIndex extends Component {
   sendComment(e) {
     console.log("send comment: ", this.state.currentMsg, this.props);
     let msg = this.state.currentMsg.trim();
+    if(msg === '') return false
     this.setState({currentMsg: ''});
-    let {me, story} = this.props
-    // TODO: replace storyId from store
-    let storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'))  //this.state.story.storyId
-    let cmntObj = {
-      comment: msg,
-      storyId: story.storyId,
-      from: {
-    		channelId: me.channelId, //"1799237930126421",
-        imageUrl: me.imageUrl,  //"https://img.neargroup.me/project/50x50/profile_1799237930126421",
-    		name: me.name  //"Subham Dey"
-    	},
-      timeStamp: Date.now()
-    }
-    console.log("go to addComments = ", cmntObj);
-    this.props.addComments(cmntObj)
 
-    this.processChat(cmntObj);
-    // TODO: implement this
-    // if(navigator.onLine){
-		// 	this.processChat(commentObj);
-		// }else {
-		// 	this.cacheSentChat(commentObj);
-		// }
+      let {me, story} = this.props
+      // TODO: replace storyId from store
+      let storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'))  //this.state.story.storyId
+      let cmntObj = {
+        comment: msg,
+        storyId: story.storyId,
+        from: {
+      		channelId: me.channelId, //"1799237930126421",
+          imageUrl: me.imageUrl,  //"https://img.neargroup.me/project/50x50/profile_1799237930126421",
+      		name: me.name  //"Subham Dey"
+      	},
+        timeStamp: Date.now()
+      }
+      console.log("go to addComments = ", cmntObj);
+      this.props.addComments(cmntObj)
+
+      // this.processChat(cmntObj);
+      console.log("navigator status 2= ", navigator.onLine);
+
+      if(navigator.onLine){
+        console.log("navigator online -- process chat");
+        this.processChat(cmntObj);
+        //this.processChat(commentObj);
+  		}else {
+        console.log("navigator offline -- NO process chat");
+  			// this.cacheSentChat(commentObj);
+  		}
 
   }
+
   setComment(msg) {
     console.log("msg in setComment= ",msg);
 		this.props.addComments(msg)
@@ -218,7 +257,7 @@ class CommentsIndex extends Component {
 
   cacheSentChat(commentObj) {
     // TODO: replace storyId from store
-    let storyId = this.state.story.storyId
+    let storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'))  //this.state.story.storyId
 		console.log("in cacheSentChat ", commentObj);
 		const { data, fromId, isOtherOnline } = this.props;
 		let offlineComments = localStorage.getItem(`PC_PWA_OFFLINE_COMMENTS`);
@@ -238,18 +277,24 @@ class CommentsIndex extends Component {
     console.log("in handleImg -- ", id, e, e.target.src);
 		try {
 			// to prevent infinite loop if fallback avtar even fails
-			if(!this.state.loadCheck.includes(id)) {
-				this.setState(prev => {
-					const loadCheck = [ ...loadCheck ];
-					loadCheck.push(id);
-					return { loadCheck }
-				})
-        console.log("setting target source to Avatar");
-				e.target.src = AVTAR;
-			}
+			// if(!this.state.loadCheck.includes(id)) {
+			// 	this.setState(prev => {
+			// 		const loadCheck = [ ...loadCheck ];
+			// 		loadCheck.push(id);
+			// 		return { loadCheck }
+			// 	})
+      //   console.log("setting target source to Avatar");
+			// 	e.target.src = AVTAR;
+			// }
+
+      e.target.src = AVTAR;
 
 		}catch(e){}
 	}
+
+  handleClose() {
+    this.setState({showVulgar: false})
+  }
 
   render() {
     console.log("coments in state= ", this.state);
@@ -257,21 +302,51 @@ class CommentsIndex extends Component {
     // onError={this.handleImg.bind(this, friend.channelId)}
     //containerElement={<Link to="/chat" />}
     // {Number(ucc[friend.meetingId]) > 0 && (<Chip style={{float: 'left', fontSize: 15, backgroundColor: '#00E676'}}>{ucc[friend.meetingId]}</Chip>) }
-    let {story, comments} = this.state
-
+    let {story, comments, showVulgar} = this.state
+    let {loading} = this.props
 
     return (
       <div className={Styles.ComentsWindow}>
+        <div>
+          {loading &&
+            <div>
+
+              <RefreshIndicator
+                size={40}
+                left={10}
+                top={0}
+                status="loading"
+                className={Styles.refresh}
+              />
+            </div>
+          }
+          {
+            showVulgar &&
+            (<Snackbar
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+              open={this.state.showVulgar}
+              autoHideDuration={6000}
+              onClose={this.handleClose}
+              ContentProps={{
+                'aria-describedby': 'message-id',
+              }}
+              message={<span id="message-id">Vulgar messages are prohibited</span>}
+            />)
+          }
+        </div>
         <div className={Styles.ChatBox}>
           {
-            Object.keys(this.state.story).length > 0 &&
-            (<div>
+            Object.keys(story).length > 0 &&
+            (<div className={Styles.StoryHeader} style={{margin: 0}}>
             <List style={{padding: 0}}>
               <Divider inset component="li" />
               <ListItem
                 leftAvatar={<Avatar src={story.creator.imageUrl} onError={this.handleImg.bind(this, story.creator.id)} />}
                 onClick={() => {console.log("list item click")}}
-                primaryText={<Twemoji text={htmlDecode(story.creator.name)} />}
+                primaryText={<b style={{color: 'white'}}><Twemoji text={htmlDecode(story.creator.name)} /></b>}
                 rightIcon={
                   (<div style={{float: 'right', width: '26%'}}>
                   <p className={Styles.lastTime}>
@@ -280,7 +355,7 @@ class CommentsIndex extends Component {
                   </div>)
                 }
                 secondaryText={
-      						<p style={{whiteSpace: 'normal', fontSize: 12, height: 'auto'}}>{story.storyText}</p>
+      						<p style={{whiteSpace: 'normal', fontSize: 12, height: 'auto'}}><b>{decodeURIComponent(JSON.parse('"' + story.storyText.replace(/\"/g, '\\"') + '"')) }</b></p>
       					}
               />
             </List>
@@ -288,23 +363,32 @@ class CommentsIndex extends Component {
         }
         <div>
         {
-          comments.map(item => (
-            <List style={{padding: 0}}>
-              <Divider inset component="li" />
+          comments.length > 0 &&
+          comments.map((item, index) => {
+            console.log("render comment item= ", item, index);
+            return (<List style={{padding: 0}}>
+              {/** <Divider inset component="li" /> **/}
               <ListItem
                 key={item.timeStamp}
-                leftAvatar={<Avatar src={item.from.imageUrl} onError={this.handleImg.bind(this, item.from.channelId)} />}
+                leftAvatar={<Avatar src={item.from.imageUrl} onError={this.handleImg.bind(this, item.from.id)} />}
                 onClick={() => {console.log("list item click")}}
                 primaryText={<Twemoji text={htmlDecode(item.from.name)} />}
 
                 secondaryText={
       						<div style={{whiteSpace: 'normal', fontSize: 12, height: 'auto'}}>
-                  {item.type == "wow" ? "liked this story." : "commented:"} {item.type != "like" && item.comment}
+                  {
+                    item.type == "wow" &&
+                    <p style={{margin: 0}}><FontAwesome className={Styles.lastTime} name="heart"  style={{color: 'red'}}/> liked this story.</p>
+                  }
+                  {
+                    item.type != "wow" &&
+                    decodeURIComponent(JSON.parse('"' + item.comment.replace(/\"/g, '\\"') + '"') )
+                  }
                   </div>
       					}
               />
-            </List>
-          ))
+            </List>)
+          } )
           }
         </div>
         </div>
@@ -339,12 +423,18 @@ const mapStateToProps = state => {
 	return {
 		me: (state.comments.me && state.comments.me) || '',
     story: state.comments.story || {},
-    comments: state.comments.comments
+    comments: state.comments.comments,
+    childListeners: state.comments.childListeners || [],
+    showVulgar: state.comments.showVulgar || false,
+    loading: state.comments.isLoading || false,
 	}
 }
 
 const mapDispatchToProps = dispatch => {
 	return {
+    getCacheData: (storyId) => {
+      dispatch(getCacheData(storyId))
+    },
     getComments: (storyId, authId) => {
       dispatch(getComments(storyId, authId))
     },
@@ -353,7 +443,11 @@ const mapDispatchToProps = dispatch => {
     },
 		addComments: (cmtObj) => {
       dispatch(addComments(cmtObj))
-    }
+    },
+
+		addChildListener: meetingId => {
+			dispatch(addChildListener(meetingId));
+		},
 	}
 }
 

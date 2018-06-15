@@ -1,4 +1,4 @@
-const cacheName = 'PC_SD_API_PWA_1_1';
+const cacheName = 'PC_SD_API_PWA_1_5';
 const filesToCache = [
     '/',
     '/index.html',

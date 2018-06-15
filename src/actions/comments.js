@@ -8,6 +8,23 @@ export function showLoader() {
     };
 }
 
+export const getCacheData = (storyId) => {
+  if(storyId === "") return {
+    type: 'BLANK',
+    payload: response
+  }
+  var cacheComments = localStorage.getItem(`PC_PWA_COMMENTS_${storyId}`) != null ? JSON.parse(localStorage.getItem(`PC_PWA_COMMENTS_${storyId}`)) : []
+  // var cacheStory = localStorage.getItem('PC_PWA_STORY_ME') != null ? JSON.parse(localStorage.getItem('PC_PWA_STORY_ME')).story : {}
+  var cacheStory = localStorage.getItem(`PC_PWA_STORY_${storyId}`) != null ? JSON.parse(localStorage.getItem(`PC_PWA_STORY_${storyId}`)) : {}
+  var cacheMe = localStorage.getItem('PC_PWA_STORY_ME') != null ? JSON.parse(localStorage.getItem('PC_PWA_STORY_ME')).me : {}
+  console.log('cache data in getCacheData= ', storyId, cacheComments, cacheStory, cacheMe);
+
+  return {
+    type: "CACHE_DATA",
+    payload: {cacheComments, cacheStory, cacheMe}
+  }
+}
+
 export const getComments = (storyId, authId) => {
     const startTime = localStorage.getItem(`PC_PWA_START`) || Date.now();
     Store.dispatch(showLoader());
@@ -45,11 +62,20 @@ export const saveComment = (data) => {
         data
     })
     .then( response => {
-      console.log('in saveComment action response = ', response);
+      console.log('in saveComment action response = ', response.data);
+
+      if(response.data.isVulgar) {
         return {
-            type: 'BLANK',
-            payload: response
+          type: 'REMOVE_VULGAR_COMMENT',
+          payload: {storyId: data.storyId, timeStamp: response.data.timestamp}
         }
+      } else {
+        return {
+          type: 'BLANK',
+          payload: response
+        }
+      }
+
     })
     .catch( error => {
       console.log('in saveComments action error = ', error);
@@ -65,5 +91,12 @@ export const addComments = (comment) => {
     return {
         type: 'ADD_COMMENTS',
         payload: {comment}
+    }
+}
+
+export const addChildListener = meetingId => {
+    return {
+        type: 'ADD_CHILD_LISTENER',
+        payload: meetingId
     }
 }

@@ -25,6 +25,7 @@ const newCompare = (a,b) => {
 }
 
 export const htmlDecode = msg => {
+	console.log("htmlDecode msg= ", msg, decodeURIComponent(JSON.parse('"' + msg.replace(/\"/g, '\\"') + '"') ));
 	try {
 		msg = msg.replace(/<(?:.|\n)*?>/gm, '');
 		const dummyElement = document.createElement('p');

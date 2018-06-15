@@ -9,20 +9,25 @@ export default class NoFriends extends Component {
 		super(props);
 	}
 
+	handleClose(e) {
+		console.log('closing window');
+		window.close()
+	}
+
   	render() {
 	    return (
 			<div className={Styles.container}>
-				<p>Your Friends List <br/> is empty</p>
+				<p>No Comments</p>
 				<ReactSVG
 					path="noFriends.svg"
 					className="class-name"
 					wrapperClassName={Styles.img}
 			  	/>
-				<div>
+				<div onClick={this.handleClose}>
 				  	<RaisedButton
-						label="GO BACK"
+						label="CLOSE"
 						primary={true}
-						href="https://m.me/WispBot"
+
 					/>
 				</div>
 		  	</div>

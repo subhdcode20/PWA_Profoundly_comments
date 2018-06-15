@@ -176,6 +176,13 @@ app.get('/getComments', (req, res) => {
     res.end(JSON.stringify(json));
 });
 
+app.post('/saveComment', (req, res) => {
+   let json = {"Response":false,"isVulgar":true,"channelId":"13513515135134","timestamp": "2018-06-06 19:09:28.0"}
+   res.header("Access-Control-Allow-Origin", "*");
+   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+   res.end(JSON.stringify(json));
+})
+
 
 
 app.use(express.static(path.join(__dirname, '../example/public')));

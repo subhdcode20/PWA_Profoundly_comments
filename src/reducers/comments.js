@@ -15,6 +15,16 @@ export default function ng(state = [], action) {
 		case 'LOADER_FRNDS':
 			return { ...state, isLoading: true }
 			break;
+
+		case 'CACHE_DATA':
+			console.log('CACHE_DATA = ',action.payload);
+			return {
+				...state,
+				comments: action.payload.cacheComments,
+				story: action.payload.cacheStory,
+				me: action.payload.cacheMe
+			}
+
 		case 'COMMENTS_LIST':
 			console.log("COMMENTS_LIST - ", action.payload);
 			let isError = true;
@@ -42,7 +52,7 @@ export default function ng(state = [], action) {
 							"id": comment.from.commentingChannelId,
 							"name": comment.from.commenterUserName,
 						}
-						newComment["type"] = comment.from.type
+						newComment["type"] = comment.type
 						comments.push(newComment)
 						newComment = {}
 					})
@@ -138,9 +148,12 @@ export default function ng(state = [], action) {
 
 				// if(comments && comments.length > 0)
 				localStorage.setItem('PC_PWA_STORY_ME', JSON.stringify({story, comments, me}) );
-				isLoading = false;
+				localStorage.setItem(`PC_PWA_COMMENTS_${action.payload.data.story.storyId}`, JSON.stringify(comments))
+				localStorage.setItem(`PC_PWA_STORY_${action.payload.data.story.storyId}`, JSON.stringify(story))
+
 			}
-			console.log("unreadChatCounts in FRIENDS_LIST= ", unreadChatCounts);
+			isLoading = false;
+			console.log("loader remove = ", isLoading);
 			return { ...state, story, comments, me, isLoading, timestamp: Date.now(), noReload: true } //unreadChatCounts
 			break;
 
@@ -166,6 +179,24 @@ export default function ng(state = [], action) {
 			// myChats.push(myMsg);
 			// allChats[myMeetingId] = myChats;
 			// return { ...tempState, chats: allChats };
+			break;
+		case 'ADD_CHILD_LISTENER':
+			console.log("ADD_CHILD_LISTENER - ", action.payload);
+			const childListeners = state.childListeners ? [...state.childListeners] : [];
+			if(!childListeners.includes(action.payload)) childListeners.push(action.payload);
+			return { ...state, childListeners }
+			break;
+		case 'REMOVE_VULGAR_COMMENT':
+			console.log("REMOVE_VULGAR_COMMENT - ", action.payload);
+			let vulgarCmntTime = action.payload.timeStamp
+		  let storyId = action.payload.storyId
+			let prevcomments = state.comments;
+			console.log("original prevcomments= ", prevcomments);
+			let filterComments = prevcomments.filter(item => item.timeStamp != vulgarCmntTime)
+			console.log("filter coments= ", filterComments);
+			localStorage.setItem(`PC_PWA_COMMENTS_${storyId}`, filterComments)
+			return {...state, comments: filterComments, showVulgar: true}
+
 			break;
 		case "BLANK":
 			return	{...state}
