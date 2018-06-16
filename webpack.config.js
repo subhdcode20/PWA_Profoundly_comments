@@ -69,7 +69,7 @@ module.exports = {
             FIREBASE_PROJECT_ID : JSON.stringify('profoudlycomments'),
             FIREBASE_MESSAGING_ID : JSON.stringify('864670885969'),
             // FIREBASE_STORAGE_BUCKET : JSON.stringify(''),
-            API: JSON.stringify('https://b34523fc.ngrok.io/NG/'),  //JSON.stringify('https://profoundlypwa.neargroup.me/ab/'),
+            API: JSON.stringify('https://profoundlypwa.neargroup.me/ab/'),   //JSON.stringify('https://test.neargroup.me'),
             LIVEAPI: JSON.stringify('https://wisp.neargroup.me/wisp/'),
             AVTAR: JSON.stringify('avtar.svg'),
             ISDEV: true,

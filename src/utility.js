@@ -25,7 +25,7 @@ const newCompare = (a,b) => {
 }
 
 export const htmlDecode = msg => {
-	console.log("htmlDecode msg= ", msg, decodeURIComponent(JSON.parse('"' + msg.replace(/\"/g, '\\"') + '"') ));
+
 	try {
 		msg = msg.replace(/<(?:.|\n)*?>/gm, '');
 		const dummyElement = document.createElement('p');
@@ -34,6 +34,14 @@ export const htmlDecode = msg => {
 		return renderedContent;
 	}catch(e) {
 		return msg;
+	}
+}
+
+export const  storyTextDecode = (storyText) => {
+	try {
+		return decodeURIComponent(JSON.parse('"' + storyText.replace(/\n/g, ' ') + '"'))
+	} catch(e) {
+		return storyText
 	}
 }
 

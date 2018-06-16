@@ -16,7 +16,7 @@ import {addComment, getComments, saveComment, addComments, addChildListener, get
 import querystring from 'query-string';
 import NoFriends from '../NoFriends';
 import Styles from "./style.scss";
-import { htmlDecode, sortFriendList, formatDate, formatTime } from '../../utility';
+import { storyTextDecode, htmlDecode, sortFriendList, formatDate, formatTime } from '../../utility';
 
 class CommentsIndex extends Component {
   constructor(props) {
@@ -304,6 +304,16 @@ class CommentsIndex extends Component {
     // {Number(ucc[friend.meetingId]) > 0 && (<Chip style={{float: 'left', fontSize: 15, backgroundColor: '#00E676'}}>{ucc[friend.meetingId]}</Chip>) }
     let {story, comments, showVulgar} = this.state
     let {loading} = this.props
+    // story.storyText = "#DailyRants | Boy - 20 | 19 KM Kung mababasa mo to GUMAMELA mag reply ka pls iba Kasi napindot ko eh- E,Dodong, Hindi ko ma replyan. Eto Yung lumalabas oh \" This user is busy chatting with someone, please try again later.\" I think you hit the\"block\" button lol \uD83D\uDE02. Paano na to?"
+    if(Object.keys(story).length > 0) {
+
+      console.log('render story text= ',
+      story.storyText)
+      console.log("#DailyRants | Boy - 20 | 19 KM Kung mababasa mo to GUMAMELA mag reply ka pls iba Kasi napindot ko eh- E,Dodong, Hindi ko ma replyan. Eto Yung lumalabas oh \" This user is busy chatting with someone, please try again later.\" I think you hit the\"block\" button lol \uD83D\uDE02. Paano na to?"
+      );
+      console.log(decodeURIComponent(JSON.parse('"' + story.storyText.replace(/\n/g, ' ') + '"')) )
+
+    }
 
     return (
       <div className={Styles.ComentsWindow}>
@@ -355,7 +365,7 @@ class CommentsIndex extends Component {
                   </div>)
                 }
                 secondaryText={
-      						<p style={{whiteSpace: 'normal', fontSize: 12, height: 'auto'}}><b>{decodeURIComponent(JSON.parse('"' + story.storyText.replace(/\"/g, '\\"') + '"')) }</b></p>
+      						<p style={{whiteSpace: 'normal', fontSize: 12, height: 'auto'}}><b>{/** <Twemoji text={htmlDecode(story.storyText)} /> **/}  <Twemoji text={ storyTextDecode(story.storyText) } /> </b></p>
       					}
               />
             </List>
@@ -382,7 +392,8 @@ class CommentsIndex extends Component {
                   }
                   {
                     item.type != "wow" &&
-                    decodeURIComponent(JSON.parse('"' + item.comment.replace(/\"/g, '\\"') + '"') )
+                    <Twemoji text={ storyTextDecode(item.comment) } />
+
                   }
                   </div>
       					}
@@ -418,7 +429,7 @@ class CommentsIndex extends Component {
   }
 
 }
-
+// decodeURIComponent(JSON.parse('"' + item.comment.replace(/\"/g, '\\"') + '"') )
 const mapStateToProps = state => {
 	return {
 		me: (state.comments.me && state.comments.me) || '',
