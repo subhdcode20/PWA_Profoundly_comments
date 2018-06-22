@@ -29,8 +29,8 @@ export default function ng(state = [], action) {
 			console.log("COMMENTS_LIST - ", action.payload);
 			let isError = true;
 			let isLoading = true;
-			let newComments = []
 			let comments
+			let {me} = state
 			let story
 			if(
 				action.payload &&
@@ -51,7 +51,13 @@ export default function ng(state = [], action) {
 							"imageUrl": comment.from.commenterPic,
 							"id": comment.from.commentingChannelId,
 							"name": comment.from.commenterUserName,
+							"isfollowing" : comment.from.commentingChannelId != me.channelId ? comment.from.isfollowing : null,
+							"userAuth" : comment.from.userAuth
 						}
+						console.log("get data isfollowing comment: ", comment.from, me.channelId, newComment.from.isfollowing);
+						// if(comment.from.id != me.channelId) {
+						// 	newComment.from["isfollowing"] = comment.from.isfollowing
+						// }
 						newComment["type"] = comment.type
 						comments.push(newComment)
 						newComment = {}
@@ -65,8 +71,11 @@ export default function ng(state = [], action) {
 					story["creator"] = {
 						"name": action.payload.data.story.creator.creatorName,
 						"id": action.payload.data.story.creator.creatorChannelId,
-						"imageUrl": action.payload.data.story.creator.creatorPic
+						"imageUrl": action.payload.data.story.creator.creatorPic,
+						"isfollowing" : action.payload.data.story.creator.creatorChannelId != me.channelId ? action.payload.data.story.creator.isfollowing : null,
+						"userAuth" : action.payload.data.story.creator.userAuth
 					}
+					console.log("get data isfollowing story: ", action.payload.data.story.creator, me.channelId, story.creator.isfollowing);
 					story["wowCount"] = action.payload.data.story.wowCount
 					story["storyTime"] = action.payload.data.story.storyTime
 				}
@@ -75,78 +84,11 @@ export default function ng(state = [], action) {
 					me.channelId = action.payload.data.currentUser.currentUserChannelId
 					me.imageUrl = action.payload.data.currentUser.currentUserPic
 					me.name = action.payload.data.currentUser.currentUserName
+					me.userAuth = action.payload.data.currentUser.currentUserAuth
 				}
 
 				console.log("api to pwa data= ", comments, story, me);
-				// const goMemories = action.payload.data.goMemories;
-				// const goChats = action.payload.data.goChats;
-				// const notifyAgain = action.payload.data.notifyAgain;
-				// const genericKeys = action.payload.data.keys || [];
-				// try {
-				// 	if (notifyAgain && notifyAgain === 'plzRestoreNotification') {
-				// 		localStorage.removeItem('NG_PWA_NOTIFICATION');
-				// 		window.location.reload();
-				// 	}
-				// 	if (goMemories && goMemories === 'letTheMemoriesGo') {
-				// 		localStorage.clear();
-				// 		window.location.reload();
-				// 	}
-				// 	if (genericKeys && genericKeys.length !== 0) {
-				// 		genericKeys.forEach(x => localStorage.removeItem(x));
-				// 		window.location.reload();
-				// 	}
-				// 	if (goChats && goChats === 'letTheChatsGo') {
-				// 		for (let i in localStorage) {
-				// 			if (localStorage.hasOwnProperty(i)) {
-				// 				if (i.indexOf('NG_PWA_CHAT_') > -1) localStorage.removeItem(i);
-				// 			}
-				// 		}
-				// 		window.location.reload();
-				// 	}
-        //
-				// }catch(e){}
 
-				// newFriends = friends
-				// let friendsCache = localStorage.getItem('NG_PWA_friendsList')
-				// console.log("friendsCache= ", friendsCache, friends);
-				// if(friendsCache != null && friendsCache != undefined && friendsCache != []
-				// 	&& friends != undefined && friends != null && friends.length > 0) {
-				// 	friendsCache = JSON.parse(friendsCache)
-				// 	console.log("friendsCache ok ");
-				// 	newFriends = friends.map(friend => {
-				// 		console.log("friend= ", friend);
-				// 		let foundInCache = false
-				// 		friendsCache.friends.forEach(item => {
-				// 			if(friend.meetingId == item.meetingId) {
-				// 				foundInCache = true
-				// 			}
-				// 		})
-				// 		console.log("foundInCache= ", foundInCache);
-				// 		if(foundInCache != true) {
-				// 			return {...friend, newfriend: true}
-				// 		} else {
-				// 			return friend
-				// 		}
-				// 	})
-				// }
-				// console.log("newFriends= ", newFriends);
-				// let unreadChatCounts
-				// if(localStorage.getItem('NG_PWA_UNREAD_COUNTS') == null || localStorage.getItem('NG_PWA_UNREAD_COUNTS') == undefined ) {
-				// 	console.log("NG_PWA_UNREAD_COUNTS not in localStorage= ", localStorage.getItem('NG_PWA_UNREAD_COUNTS'));
-				// 	let friendsUnread = {}
-				// 	friends.forEach(item => {
-				// 		friendsUnread[item.meetingId] = 0
-				// 	})
-				// 	console.log('NG_PWA_UNREAD_COUNTS new in localStorage= ', friendsUnread);
-				// 	localStorage.setItem('NG_PWA_UNREAD_COUNTS', JSON.stringify(friendsUnread))
-				// 	unreadChatCounts = friendsUnread
-				// } else {
-				// 	unreadChatCounts = JSON.parse(localStorage.getItem('NG_PWA_UNREAD_COUNTS'))
-				// 	console.log("unreadChatCounts in  localstorage= ", unreadChatCounts);
-				// }
-				// console.log("final new friend= ", newFriends);
-
-				// if(comments && comments.length > 0)
 				localStorage.setItem('PC_PWA_STORY_ME', JSON.stringify({story, comments, me}) );
 				localStorage.setItem(`PC_PWA_COMMENTS_${action.payload.data.story.storyId}`, JSON.stringify(comments))
 				localStorage.setItem(`PC_PWA_STORY_${action.payload.data.story.storyId}`, JSON.stringify(story))
@@ -198,6 +140,95 @@ export default function ng(state = [], action) {
 			return {...state, comments: filterComments, showVulgar: true}
 
 			break;
+
+		case 'FOLLOW_USER':
+				console.log("FOLLOW_USER - ", action.payload, state);
+				let store = state
+				let newComments = [], newStory = {}
+				// let isError = true;
+				isLoading = true;
+				let query = action.payload.query
+				// let newComments = []
+				// let comments
+				// let story
+				if(
+					action.payload &&
+					action.payload.data.status &&
+					action.payload.data &&
+					action.payload.data.status >= 200 && action.payload.data.status < 300
+				) {
+					console.log('FOLLOW_USER ok store= ', store);
+
+					let {comments, story, me} = store
+					newStory= story
+					newComments = comments
+					console.log('newComments initial= ', newComments);
+					newComments.forEach(comnt => {
+						if(comnt.from.id == query.followedChannelId && query.followedChannelId != me.channelId) {
+							console.log("found commenter -- ", query);
+							if(query.type === 'Unfollow') comnt.from.isfollowing =  false;
+							else if(query.type === 'Follow') comnt.from.isfollowing =  true;
+						}
+					})
+					console.log('story initial= ', newStory);
+					if(newStory.creator.id == query.followedChannelId && newStory.creator.id != me.channelId) {
+						if(query.type === 'Unfollow') newStory.creator.isfollowing =  false;
+						else if(query.type === 'Follow') newStory.creator.isfollowing =  true;
+					}
+					console.log('newStory after= ', newStory);
+					console.log('newComments after= ', newComments);
+
+					// isError = false;
+					// comments = [];
+					// if( action.payload.data.comments && action.payload.data.comments.length > 0) {
+					// 	let apiComments = action.payload.data.comments
+					// 	let newComment = {}
+					// 	apiComments.forEach(comment => {
+					// 		newComment["comment"] = comment.comment
+					// 		newComment["timeStamp"] = comment.time
+					// 		newComment["from"] = {
+					// 			"imageUrl": comment.from.commenterPic,
+					// 			"id": comment.from.commentingChannelId,
+					// 			"name": comment.from.commenterUserName,
+					// 		}
+					// 		newComment["type"] = comment.type
+					// 		comments.push(newComment)
+					// 		newComment = {}
+					// 	})
+					//
+					// }
+					// story = {}
+					// if( action.payload.data.story) {
+					// 	story["storyText"] = action.payload.data.story.story
+					// 	story["storyId"] = action.payload.data.story.storyId
+					// 	story["creator"] = {
+					// 		"name": action.payload.data.story.creator.creatorName,
+					// 		"id": action.payload.data.story.creator.creatorChannelId,
+					// 		"imageUrl": action.payload.data.story.creator.creatorPic
+					// 	}
+					// 	story["wowCount"] = action.payload.data.story.wowCount
+					// 	story["storyTime"] = action.payload.data.story.storyTime
+					// }
+					// me = {};
+					// if(action.payload.data.currentUser) {
+					// 	me.channelId = action.payload.data.currentUser.currentUserChannelId
+					// 	me.imageUrl = action.payload.data.currentUser.currentUserPic
+					// 	me.name = action.payload.data.currentUser.currentUserName
+					// }
+
+					// console.log("api to pwa data= ", comments, story, me);
+
+					// localStorage.setItem('PC_PWA_STORY_ME', JSON.stringify({story, comments, me}) );
+					// localStorage.setItem(`PC_PWA_COMMENTS_${action.payload.data.story.storyId}`, JSON.stringify(comments))
+					// localStorage.setItem(`PC_PWA_STORY_${action.payload.data.story.storyId}`, JSON.stringify(story))
+
+				}
+				isLoading = false;
+				// console.log("loader remove = ", isLoading);
+				// return { ...state, story, comments, me, isLoading, timestamp: Date.now(), noReload: true } //unreadChatCounts
+				return { ...state, comments: newComments, story: newStory, isLoading}
+				break;
+
 		case "BLANK":
 			return	{...state}
 			break;

@@ -12,11 +12,25 @@ import TextField from "material-ui/TextField";
 import ActionSend from "material-ui/svg-icons/content/send";
 import Snackbar from 'material-ui/Snackbar';
 import { cyan500 } from "material-ui/styles/colors";
-import {addComment, getComments, saveComment, addComments, addChildListener, getCacheData} from "../../actions/comments";
+import {addComment, getComments, saveComment, addComments, addChildListener, getCacheData, followUser} from "../../actions/comments";
 import querystring from 'query-string';
 import NoFriends from '../NoFriends';
 import Styles from "./style.scss";
 import { storyTextDecode, htmlDecode, sortFriendList, formatDate, formatTime } from '../../utility';
+import { withStyles } from '@material-ui/core/styles';
+import Button from '@material-ui/core/Button';
+
+// import '../../shared/font-awesome.min.css'
+
+const styles = theme => ({
+  button: {
+    // margin: theme.spacing.unit,
+    padding: 0,
+    minWidth: 64,
+    fontSize: 0.8125,
+    minHeight: 32,
+  },
+});
 
 class CommentsIndex extends Component {
   constructor(props) {
@@ -27,7 +41,10 @@ class CommentsIndex extends Component {
       currentMsg: "",
       comments: [],
       story: {},
-      loadCheck: []
+      loadCheck: [],
+      myProfileBaseUrl: "https://stories.neargroup.me/ab/myprofile.html?channelid=",
+      otherProfileBaseUrl: "https://stories.neargroup.me/ab/myprofile.html?channelid=",
+      authId: ""
     }
     this.handleCommentChange = this.handleCommentChange.bind(this)
     this.processChat = this.processChat.bind(this)
@@ -70,6 +87,7 @@ class CommentsIndex extends Component {
     if(document.getElementById('loading')) document.getElementById('loading').remove();
     const storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'))
     const authId = JSON.parse(localStorage.getItem('PC_PWA_AUTHID'))
+    this.setState({authId: authId})
     console.log("getComments params = ", storyId, authId);
     console.log("navigator status= ", navigator.onLine);
     if(navigator.onLine) {
@@ -296,14 +314,26 @@ class CommentsIndex extends Component {
     this.setState({showVulgar: false})
   }
 
+  followCommentUser(e, followUser) {
+    e.preventDefault()
+    console.log(this.props.me.channelId , " following-- ",  followUser.id);
+    let query = {
+      "type": followUser.isfollowing ? "Unfollow" : "Follow",
+      "followingChannelId" : this.props.me.channelId,
+      "followedChannelId" : followUser.id
+    }
+
+    this.props.followUser(query)
+  }
+
   render() {
     console.log("coments in state= ", this.state);
     const AvtarUrl = 'https://img.neargroup.me/project/forcesize/50x50/profile_';
     // onError={this.handleImg.bind(this, friend.channelId)}
     //containerElement={<Link to="/chat" />}
     // {Number(ucc[friend.meetingId]) > 0 && (<Chip style={{float: 'left', fontSize: 15, backgroundColor: '#00E676'}}>{ucc[friend.meetingId]}</Chip>) }
-    let {story, comments, showVulgar} = this.state
-    let {loading} = this.props
+    let {story, comments, showVulgar, myProfileBaseUrl, authId} = this.state
+    let {loading, me} = this.props
     // story.storyText = "#DailyRants | Boy - 20 | 19 KM Kung mababasa mo to GUMAMELA mag reply ka pls iba Kasi napindot ko eh- E,Dodong, Hindi ko ma replyan. Eto Yung lumalabas oh \" This user is busy chatting with someone, please try again later.\" I think you hit the\"block\" button lol \uD83D\uDE02. Paano na to?"
     if(Object.keys(story).length > 0) {
 
@@ -311,7 +341,9 @@ class CommentsIndex extends Component {
       story.storyText)
       console.log("#DailyRants | Boy - 20 | 19 KM Kung mababasa mo to GUMAMELA mag reply ka pls iba Kasi napindot ko eh- E,Dodong, Hindi ko ma replyan. Eto Yung lumalabas oh \" This user is busy chatting with someone, please try again later.\" I think you hit the\"block\" button lol \uD83D\uDE02. Paano na to?"
       );
-      console.log(decodeURIComponent(JSON.parse('"' + story.storyText.replace(/\n/g, ' ') + '"')) )
+      console.log(storyTextDecode(story.storyText))
+      console.log(story.storyText)
+      console.log(story.storyText.replace(/\n/g, 'U+23CE')  )
 
     }
 
@@ -354,21 +386,25 @@ class CommentsIndex extends Component {
             <List style={{padding: 0}}>
               <Divider inset component="li" />
               <ListItem
-                leftAvatar={<Avatar src={story.creator.imageUrl} onError={this.handleImg.bind(this, story.creator.id)} />}
+                leftAvatar={<a href={story.creator.id == this.props.me.channelId ? myProfileBaseUrl + me.userAuth : myProfileBaseUrl + story.creator.userAuth + "&channelid2=" + this.state.authId+ "&hYFyh=GVhfhH"}>
+                  <Avatar src={story.creator.imageUrl} onError={this.handleImg.bind(this, story.creator.id)} /></a>}
+
                 onClick={() => {console.log("list item click")}}
-                primaryText={<b style={{color: 'white'}}><Twemoji text={htmlDecode(story.creator.name)} /></b>}
-                rightIcon={
-                  (<div style={{float: 'right', width: '26%'}}>
-                  <p className={Styles.lastTime}>
-                    {/** Number(item.likes) > 0 && <span>{item.likes}</span> **/}
-                  </p>
-                  </div>)
-                }
+
+                primaryText={<b style={{whiteSpace: 'pre-line', color: 'white', fontSize: 20}}>
+                      <Twemoji text={htmlDecode(story.creator.name)} />
+                        {story.creator.isfollowing != null && (<Button variant="outlined" style={{padding: 2, float: 'right', fontSize: 10}} size="small" color="primary"
+                        onClick={e => this.followCommentUser(e, story.creator)} >
+                           {story.creator.isfollowing ? "unfollow" : "follow" }
+                        </Button>)}
+                      </b>}
+
                 secondaryText={
-      						<p style={{whiteSpace: 'normal', fontSize: 12, height: 'auto'}}><b>{/** <Twemoji text={htmlDecode(story.storyText)} /> **/}  <Twemoji text={ storyTextDecode(story.storyText) } /> </b></p>
+      						<p style={{whiteSpace: 'pre-line', fontSize: 16, height: 'auto'}}><b> {/** <Twemoji text={htmlDecode(story.storyText)} />  <Twemoji text={ **/} {storyTextDecode(story.storyText)} {/** } /> **/} </b></p>
       					}
               />
             </List>
+
           </div>)
         }
         <div>
@@ -380,19 +416,24 @@ class CommentsIndex extends Component {
               {/** <Divider inset component="li" /> **/}
               <ListItem
                 key={item.timeStamp}
-                leftAvatar={<Avatar src={item.from.imageUrl} onError={this.handleImg.bind(this, item.from.id)} />}
+                leftAvatar={<a href={item.from.id == me.channelId ? myProfileBaseUrl + me.userAuth : myProfileBaseUrl + item.from.userAuth + "&channelid2=" + this.state.authId+ "&hYFyh=GVhfhH"}>
+                    <Avatar src={item.from.imageUrl} onError={this.handleImg.bind(this, item.from.id)} /> </a>}
                 onClick={() => {console.log("list item click")}}
-                primaryText={<Twemoji text={htmlDecode(item.from.name)} />}
+                primaryText={<b style={{whiteSpace: 'pre-line', fontSize: 18}}><Twemoji text={htmlDecode(item.from.name)} />
+                {item.from.isfollowing != null && (<span style={{padding: 0, margin: 0, color:"#ff5e3a", fontWeight: 'normal', float: 'right', fontSize: 14}}
+                onClick={e => this.followCommentUser(e, item.from)} > {item.from.isfollowing ? "unfollow" : "follow" }
+                </span>)}
+                </b>}
 
                 secondaryText={
-      						<div style={{whiteSpace: 'normal', fontSize: 12, height: 'auto'}}>
+      						<div style={{whiteSpace: 'normal', height: 'auto', margin: "0px !important"}}>
                   {
                     item.type == "wow" &&
-                    <p style={{margin: 0}}><FontAwesome className={Styles.lastTime} name="heart"  style={{color: 'red'}}/> liked this story.</p>
+                    <p style={{whiteSpace: 'pre-line', margin: 0}}><FontAwesome className={Styles.lastTime} name="heart"  style={{color: 'red'}}/> liked this story.</p>
                   }
                   {
                     item.type != "wow" &&
-                    <Twemoji text={ storyTextDecode(item.comment) } />
+                    <p style={{whiteSpace: 'pre-line', margin: 0}}><Twemoji text={ storyTextDecode(item.comment) } /></p>
 
                   }
                   </div>
@@ -420,7 +461,7 @@ class CommentsIndex extends Component {
   					ref="autoFocus"
   				/>
   				<a onClick={this.sendComment}>
-  					<ActionSend color={cyan500} />
+  					<ActionSend color={'#ff1fac'} /> {/** cyan500 **/}
   				</a>
   			</div>
       </div>
@@ -455,28 +496,28 @@ const mapDispatchToProps = dispatch => {
 		addComments: (cmtObj) => {
       dispatch(addComments(cmtObj))
     },
-
 		addChildListener: meetingId => {
 			dispatch(addChildListener(meetingId));
 		},
+    followUser: query => {
+      dispatch(followUser(query))
+    }
 	}
 }
 
-export default connect(mapStateToProps, mapDispatchToProps)(CommentsIndex)
+export default connect(mapStateToProps, mapDispatchToProps)(withStyles(styles)(CommentsIndex))
 
 // rightIcon={
-//   (
-//     <div style={{float: 'right', width: '15%', textAlign: 'center'}}>
-//       <FontAwesome className={Styles.lastTime} name="heart" />
-//       <br />
-//     {/**
-//       <span>&#9825;</span>
-//     **/}
-//       <span className={Styles.lastTime} style={{fontSize: 10}}>
-//         {Number(item.likes) > 0 && <span>{item.likes}</span>}
-//         {/** <span style={{float: 'left', fontSize: 15, color: '#4CAF50'}}>{Number(ucc[friend.meetingId]) > 0 && ucc[friend.meetingId]}</span> **/}
-//         {/** <span style={{float: 'right', color: Number(ucc[friend.meetingId]) > 0 ? '#00E676' : '' }}>{this.handleLastTime(friend.lastTime)}</span>) **/}
-//       </span>
-//     </div>
-//   )
+//   (<div style={{float: 'right', top: 0}}>
+//   <Button variant="outlined" size="small" color="primary" className={this.props.classes.button}
+//         onClick={e => this.followCommentUser(story.creator.id)} >
+//     follow
+//   </Button>
+//   {/**
+//     <button name="follow" onClick={e => this.followCommentUser(story.creator.id)} />
+//   <p className={Styles.lastTime}>
+//        Number(item.likes) > 0 && <span>{item.likes}</span>
+//   </p>
+//   **/}
+//   </div>)
 // }

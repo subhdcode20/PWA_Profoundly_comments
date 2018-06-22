@@ -58,7 +58,9 @@ module.exports = {
             compress : {
               dead_code: true,
               drop_console: true,
-              unused: true
+              unused: true,
+              booleans: true,
+              toplevel: true
             }
           }
         }),
@@ -69,7 +71,7 @@ module.exports = {
             FIREBASE_PROJECT_ID : JSON.stringify('profoudlycomments'),
             FIREBASE_MESSAGING_ID : JSON.stringify('864670885969'),
             // FIREBASE_STORAGE_BUCKET : JSON.stringify(''),
-            API: JSON.stringify('https://profoundlypwa.neargroup.me/ab/'),   //JSON.stringify('https://test.neargroup.me'),
+            API: JSON.stringify('https://profoundlypwa.neargroup.me/ab/'), //JSON.stringify('https://d512ab2d.ngrok.io/NG/'),
             LIVEAPI: JSON.stringify('https://wisp.neargroup.me/wisp/'),
             AVTAR: JSON.stringify('avtar.svg'),
             ISDEV: true,

@@ -8,10 +8,33 @@ export function showLoader() {
     };
 }
 
+export const followUser = (data) => {
+  console.log('followUser ');
+  Store.dispatch(showLoader());
+  return axios({
+      method: 'POST',
+      url: `${API}followOnComment`,
+      data
+  })
+  .then( response => {
+    console.log('in followOnComment action response = ', response);
+      return {
+          type: 'FOLLOW_USER',
+          payload: { data: response, query: data}
+      }
+  })
+  .catch( error => {
+    console.log('in followOnComment action error = ', error);
+      return {
+          type: 'FOLLOW_USER',
+          payload: { data: 0, error }
+      }
+  });
+}
+
 export const getCacheData = (storyId) => {
   if(storyId === "") return {
     type: 'BLANK',
-    payload: response
   }
   var cacheComments = localStorage.getItem(`PC_PWA_COMMENTS_${storyId}`) != null ? JSON.parse(localStorage.getItem(`PC_PWA_COMMENTS_${storyId}`)) : []
   // var cacheStory = localStorage.getItem('PC_PWA_STORY_ME') != null ? JSON.parse(localStorage.getItem('PC_PWA_STORY_ME')).story : {}

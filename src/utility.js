@@ -39,7 +39,7 @@ export const htmlDecode = msg => {
 
 export const  storyTextDecode = (storyText) => {
 	try {
-		return decodeURIComponent(JSON.parse('"' + storyText.replace(/\n/g, ' ') + '"'))
+		return decodeURIComponent(JSON.parse('"' + storyText + '"')) //.replace(/\n/g, ' ')
 	} catch(e) {
 		return storyText
 	}
