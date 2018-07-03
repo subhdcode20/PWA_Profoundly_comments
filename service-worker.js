@@ -1,4 +1,4 @@
-const cacheName = 'PC_SD_API_PWA_1_9';
+const cacheName = 'PC_SD_API_PWA_2_4';
 const filesToCache = [
     '/',
     '/index.html',
@@ -7,9 +7,14 @@ const filesToCache = [
     '/profoundlyIcon.svg',
     '/avtar.svg',
     'noFriends.svg',
-    'firebasejs4-8-1.js',
-    'firebase-client.js'
+    'https://www.gstatic.com/firebasejs/4.8.1/firebase.js',
+    'https://cdn.firebase.com/js/client/2.4.0/firebase.js',
 ];
+
+// 'firebasejs4-8-1.js',
+// 'firebase-client.js'
+// 'https://www.gstatic.com/firebasejs/4.8.1/firebase.js',
+// 'https://cdn.firebase.com/js/client/2.4.0/firebase.js',
 
 self.addEventListener('install', function(e) {
     console.info('[ServiceWorker] Install');

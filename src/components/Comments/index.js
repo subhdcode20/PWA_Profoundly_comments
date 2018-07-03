@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import FontAwesome from 'react-fontawesome';
 import { Twemoji } from "react-emoji-render";
 import Avatar from 'material-ui/Avatar';
 import List from 'material-ui/List/List';
@@ -31,6 +30,19 @@ const styles = theme => ({
     minHeight: 32,
   },
 });
+
+const DisplayFollowOption = ({item, followCommentUser}) => {
+  console.log('DisplayFollowOption - ', item, followCommentUser);
+  if(item.type != "wow" && item.from.isfollowing != null) {
+    console.log('return follow unfollow ', item);
+    return (<span style={{padding: 0, margin: 0, color:"#ff5e3a", fontWeight: 'normal', float: 'right', fontSize: 14}}
+    onClick={e => followCommentUser(e, item.from)} > {item.from.isfollowing ? "unfollow" : "follow" }
+    </span>)
+  } else {
+    console.log('return null ', item);
+    return null
+  }
+}
 
 class CommentsIndex extends Component {
   constructor(props) {
@@ -419,17 +431,22 @@ class CommentsIndex extends Component {
                 leftAvatar={<a href={item.from.id == me.channelId ? myProfileBaseUrl + me.userAuth : myProfileBaseUrl + item.from.userAuth + "&channelid2=" + this.state.authId+ "&hYFyh=GVhfhH"}>
                     <Avatar src={item.from.imageUrl} onError={this.handleImg.bind(this, item.from.id)} /> </a>}
                 onClick={() => {console.log("list item click")}}
-                primaryText={<b style={{whiteSpace: 'pre-line', fontSize: 18}}><Twemoji text={htmlDecode(item.from.name)} />
-                {item.from.isfollowing != null && (<span style={{padding: 0, margin: 0, color:"#ff5e3a", fontWeight: 'normal', float: 'right', fontSize: 14}}
-                onClick={e => this.followCommentUser(e, item.from)} > {item.from.isfollowing ? "unfollow" : "follow" }
-                </span>)}
-                </b>}
+                primaryText={<b style={{whiteSpace: 'pre-line', fontSize: 18}}>
+                  <Twemoji text={htmlDecode(item.from.name)} />
+                  <DisplayFollowOption item={item} followCommentUser={e => this.followCommentUser(e, item.from)} />
+                  {/** item.from.isfollowing != null && (<span style={{padding: 0, margin: 0, color:"#ff5e3a", fontWeight: 'normal', float: 'right', fontSize: 14}}
+                  onClick={e => this.followCommentUser(e, item.from)} > {item.from.isfollowing ? "unfollow" : "follow" }
+                  </span>) **/}
+                  </b>
+                }
 
                 secondaryText={
       						<div style={{whiteSpace: 'normal', height: 'auto', margin: "0px !important"}}>
                   {
                     item.type == "wow" &&
-                    <p style={{whiteSpace: 'pre-line', margin: 0}}><FontAwesome className={Styles.lastTime} name="heart"  style={{color: 'red'}}/> liked this story.</p>
+                    <p style={{whiteSpace: 'pre-line', margin: 0}}>
+                      <span className={Styles.lastTime} style={{color: 'red', fontSize: 18}}>&hearts;</span> liked this story.
+                    </p>
                   }
                   {
                     item.type != "wow" &&

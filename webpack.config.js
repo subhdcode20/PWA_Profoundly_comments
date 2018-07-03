@@ -20,6 +20,13 @@ module.exports = {
         path: __dirname,
         filename: 'bundle.js'
     },
+    resolve: {
+      "alias": {
+        "react": "preact-compat",
+        "react-dom": "preact-compat",
+        "create-react-class": "preact-compat/lib/create-react-class",
+      }
+    },
     module: {
         rules: [
             {
@@ -57,6 +64,7 @@ module.exports = {
           uglifyOptions: {
             compress : {
               dead_code: true,
+              reduce_vars: false,
               drop_console: true,
               unused: true,
               booleans: true,
@@ -64,6 +72,7 @@ module.exports = {
             }
           }
         }),
+        // new webpack.optimize.AggressiveMergingPlugin(),
         new webpack.DefinePlugin({
             FIREBASE_APIKEY : JSON.stringify('AIzaSyBK6xhTR4ffnYMfVJCj0769n4I7Wza4zZ0'),
             FIREBASE_AUTHDOMAIN : JSON.stringify('profoudlycomments.firebaseapp.com'),
