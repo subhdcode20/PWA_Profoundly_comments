@@ -9,5 +9,18 @@ export default function initialize() {
     };
     try{
         firebase.initializeApp(config);
-    }catch(e){}
+        let firebaseAppDefined = false
+
+setInterval(() => {
+  if (!firebaseAppDefined) {
+    if (firebase.app()) {
+      // Your code here
+      console.log('firebaseAppDefined --');
+      firebaseAppDefined = true
+    }
+  }
+}, 100)
+    }catch(e){
+      console.log("init firebase error: ", e);
+    }
 }

@@ -15,6 +15,12 @@ const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const webpack = require('webpack');
 
 module.exports = {
+    devtool: 'inline-source-map',
+    devServer: {
+       inline: true,
+       contentBase: './',
+       port : 8080
+    },
     entry: './src/index.js',
     output: {
         path: __dirname,
@@ -65,7 +71,7 @@ module.exports = {
             compress : {
               dead_code: true,
               reduce_vars: false,
-              drop_console: true,
+              // drop_console: true,
               unused: true,
               booleans: true,
               toplevel: true

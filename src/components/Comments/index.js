@@ -249,7 +249,9 @@ class CommentsIndex extends Component {
     // const {stories, storyId, me} = this.props
     let storyId = JSON.parse(localStorage.getItem('PC_PWA_STORYID'))   //this.state.story.storyId
     console.log("in processChat ", commentObj, storyId);
-
+    if (firebase.app()) {
+      console.log('firebase ok');
+    }
 		firebase
 			.database()
 			.ref(`/rooms/${storyId}`)
